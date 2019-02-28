@@ -65,7 +65,8 @@ namespace OpenMS
       "NORM_RT REAL NOT NULL," \
       "DELTA_RT REAL NOT NULL," \
       "LEFT_WIDTH REAL NOT NULL," \
-      "RIGHT_WIDTH REAL NOT NULL); " \
+      "RIGHT_WIDTH REAL NOT NULL, " \
+      "MISSED_CLEAVAGES INT NULL); " \
 
       "CREATE TABLE FEATURE_MS1(" \
       "FEATURE_ID INT NOT NULL," \
@@ -135,6 +136,7 @@ namespace OpenMS
       "TOTAL_AREA_INTENSITY REAL NOT NULL," \
       "APEX_INTENSITY REAL NOT NULL," \
       "TOTAL_MI REAL NULL," \
+      "MASSERROR_PPM REAL NULL" \
       "VAR_INTENSITY_SCORE REAL NULL," \
       "VAR_INTENSITY_RATIO_SCORE REAL NULL," \
       "VAR_LOG_INTENSITY REAL NULL," \
@@ -216,13 +218,14 @@ namespace OpenMS
             total_mi = sub_it->getMetaValue("total_mi").toString();
           }
           sql_feature_ms2_transition  << "INSERT INTO FEATURE_TRANSITION "\
-            "(FEATURE_ID, TRANSITION_ID, AREA_INTENSITY, TOTAL_AREA_INTENSITY, APEX_INTENSITY, TOTAL_MI) VALUES ("
+            "(FEATURE_ID, TRANSITION_ID, AREA_INTENSITY, TOTAL_AREA_INTENSITY, APEX_INTENSITY, TOTAL_MI, MASSERROR_PPM) VALUES ("
                                       << feature_id << ", " 
                                       << sub_it->getMetaValue("native_id") << ", " 
                                       << sub_it->getIntensity() << ", " 
                                       << sub_it->getMetaValue("total_xic") << ", " 
                                       << sub_it->getMetaValue("peak_apex_int") << ", " 
-                                      << total_mi << "); ";
+                                      << total_mi << ", "
+                                      << sub_it->getMetaValue("masserror_ppm") << "); ";
         }
         else if (sub_it->metaValueExists("FeatureLevel") && sub_it->getMetaValue("FeatureLevel") == "MS1" && sub_it->getIntensity() > 0.0)
         {
@@ -236,7 +239,7 @@ namespace OpenMS
         }
       }
 
-      sql_feature << "INSERT INTO FEATURE (ID, RUN_ID, PRECURSOR_ID, EXP_RT, NORM_RT, DELTA_RT, LEFT_WIDTH, RIGHT_WIDTH) VALUES (" 
+      sql_feature << "INSERT INTO FEATURE (ID, RUN_ID, PRECURSOR_ID, EXP_RT, NORM_RT, DELTA_RT, LEFT_WIDTH, RIGHT_WIDTH, MISSED_CLEAVAGES) VALUES ("
                   << feature_id << ", '" 
                   << *(int64_t*)&run_id_ << "', " 
                   << id << ", " 
@@ -244,7 +247,8 @@ namespace OpenMS
                   << feature_it->getMetaValue("norm_RT") << ", " 
                   << feature_it->getMetaValue("delta_rt") << ", " 
                   << feature_it->getMetaValue("leftWidth") << ", " 
-                  << feature_it->getMetaValue("rightWidth") << "); ";
+                  << feature_it->getMetaValue("rightWidth") << ", "
+                  << feature_it->getMetaValue("missed_cleavages") << "); ";
 
       sql_feature_ms2 << "INSERT INTO FEATURE_MS2 " \
         "(FEATURE_ID, AREA_INTENSITY, TOTAL_AREA_INTENSITY, APEX_INTENSITY, TOTAL_MI, "\
@@ -326,6 +330,7 @@ namespace OpenMS
         std::vector<String> id_target_total_area_intensity = getSeparateScore(*feature_it, "id_target_total_area_intensity");
         std::vector<String> id_target_apex_intensity = getSeparateScore(*feature_it, "id_target_apex_intensity");
         std::vector<String> id_target_total_mi = getSeparateScore(*feature_it, "id_target_apex_intensity");
+        std::vector<String> id_target_masserror_ppm = getSeparateScore(*feature_it, "id_target_masseror_ppm");
         std::vector<String> id_target_intensity_score = getSeparateScore(*feature_it, "id_target_intensity_score");
         std::vector<String> id_target_intensity_ratio_score = getSeparateScore(*feature_it, "id_target_intensity_ratio_score");
         std::vector<String> id_target_log_intensity = getSeparateScore(*feature_it, "id_target_ind_log_intensity");
@@ -346,7 +351,7 @@ namespace OpenMS
           {
             sql_feature_uis_transition  << "INSERT INTO FEATURE_TRANSITION "\
               "(FEATURE_ID, TRANSITION_ID, AREA_INTENSITY, TOTAL_AREA_INTENSITY, "\
-              " APEX_INTENSITY, TOTAL_MI, VAR_INTENSITY_SCORE, VAR_INTENSITY_RATIO_SCORE, "\
+              " APEX_INTENSITY, TOTAL_MI, MASSERROR_PPM, VAR_INTENSITY_SCORE, VAR_INTENSITY_RATIO_SCORE, "\
               " VAR_LOG_INTENSITY, VAR_XCORR_COELUTION, VAR_XCORR_SHAPE, VAR_LOG_SN_SCORE, "\
               " VAR_MASSDEV_SCORE, VAR_MI_SCORE, VAR_MI_RATIO_SCORE, "\
               " VAR_ISOTOPE_CORRELATION_SCORE, VAR_ISOTOPE_OVERLAP_SCORE "\
@@ -356,7 +361,8 @@ namespace OpenMS
                                         << id_target_area_intensity[i] << ", " 
                                         << id_target_total_area_intensity[i] << ", " 
                                         << id_target_apex_intensity[i] << ", " 
-                                        << id_target_total_mi[i] << ", " 
+                                        << id_target_total_mi[i] << ", "
+                                        << id_target_masserror_ppm[i] <<", "
                                         << id_target_intensity_score[i] << ", " 
                                         << id_target_intensity_ratio_score[i] << ", " 
                                         << id_target_log_intensity[i] << ", " 
@@ -376,6 +382,7 @@ namespace OpenMS
         std::vector<String> id_decoy_total_area_intensity = getSeparateScore(*feature_it, "id_decoy_total_area_intensity");
         std::vector<String> id_decoy_apex_intensity = getSeparateScore(*feature_it, "id_decoy_apex_intensity");
         std::vector<String> id_decoy_total_mi = getSeparateScore(*feature_it, "id_decoy_total_mi");
+        std::vector<String> id_decoy_masserror_ppm = getSeparateScore(*feature_it, "id_decoy_masserror_ppm");
         std::vector<String> id_decoy_intensity_score = getSeparateScore(*feature_it, "id_decoy_intensity_score");
         std::vector<String> id_decoy_intensity_ratio_score = getSeparateScore(*feature_it, "id_decoy_intensity_ratio_score");
         std::vector<String> id_decoy_log_intensity = getSeparateScore(*feature_it, "id_decoy_ind_log_intensity");
@@ -396,7 +403,7 @@ namespace OpenMS
           {
              sql_feature_uis_transition  << "INSERT INTO FEATURE_TRANSITION "\
                 "(FEATURE_ID, TRANSITION_ID, AREA_INTENSITY, TOTAL_AREA_INTENSITY, "\
-                " APEX_INTENSITY, TOTAL_MI, VAR_INTENSITY_SCORE, VAR_INTENSITY_RATIO_SCORE, "\
+                " APEX_INTENSITY, TOTAL_MI, MASSERROR_PPM, VAR_INTENSITY_SCORE, VAR_INTENSITY_RATIO_SCORE, "\
                 " VAR_LOG_INTENSITY, VAR_XCORR_COELUTION, VAR_XCORR_SHAPE, VAR_LOG_SN_SCORE, "\
                 " VAR_MASSDEV_SCORE, VAR_MI_SCORE, VAR_MI_RATIO_SCORE, "\
                 " VAR_ISOTOPE_CORRELATION_SCORE, VAR_ISOTOPE_OVERLAP_SCORE) "\
@@ -406,7 +413,8 @@ namespace OpenMS
                                         << id_decoy_area_intensity[i] << ", " 
                                         << id_decoy_total_area_intensity[i] << ", " 
                                         << id_decoy_apex_intensity[i] << ", " 
-                                        << id_decoy_total_mi[i] << ", " 
+                                        << id_decoy_total_mi[i] << ", "
+                                        << id_decoy_masserror_ppm[i] << ", "
                                         << id_decoy_intensity_score[i] << ", " 
                                         << id_decoy_intensity_ratio_score[i] << ", " 
                                         << id_decoy_log_intensity[i] << ", "

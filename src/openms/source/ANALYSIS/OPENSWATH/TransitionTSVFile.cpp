@@ -149,8 +149,10 @@ namespace OpenMS
     "CompoundName",
     "SumFormula",
     "SMILES",
+    "Adducts",
     "ProteinId",
     "UniprotId",
+    "GeneName",
     "FragmentType",
     "FragmentSeriesNumber",
     "Annotation",
@@ -344,6 +346,8 @@ namespace OpenMS
       extractName<int>(mytransition.fragment_modification, "FragmentModification", tmp_line, header_dict);
 
       //// Proteomics
+      extractName(mytransition.GeneName, "GeneName", tmp_line, header_dict);
+
       !extractName(mytransition.ProteinName, "ProteinName", tmp_line, header_dict) &&
       !extractName(mytransition.ProteinName, "ProteinId", tmp_line, header_dict); // Spectronaut
 
@@ -374,13 +378,14 @@ namespace OpenMS
       peptidoforms.split('|', mytransition.peptidoforms);
 
       //// Targeted Metabolomics
-      !extractName(mytransition.CompoundName, "CompoundName", tmp_line, header_dict) &&
-      !extractName(mytransition.CompoundName, "CompoundId", tmp_line, header_dict);
+      extractName(mytransition.CompoundName, "CompoundName", tmp_line, header_dict);
       extractName(mytransition.SumFormula, "SumFormula", tmp_line, header_dict);
       extractName(mytransition.SMILES, "SMILES", tmp_line, header_dict);
+      extractName(mytransition.Adducts, "Adducts", tmp_line, header_dict);
 
       //// Meta
       extractName(mytransition.Annotation, "Annotation", tmp_line, header_dict);
+      
       // UniprotId
       !extractName(mytransition.uniprot_id, "UniprotId", tmp_line, header_dict) &&
       !extractName(mytransition.uniprot_id, "UniprotID", tmp_line, header_dict);
@@ -1017,6 +1022,10 @@ namespace OpenMS
     {
       peptide.setMetaValue("LabelType", tr_it->label_type);
     }
+    if (!tr_it->GeneName.empty())
+    {
+      peptide.setMetaValue("GeneName", tr_it->GeneName);
+    }
 
     // per peptide CV terms
     peptide.setPeptideGroupLabel(tr_it->peptide_group_label);
@@ -1125,6 +1134,7 @@ namespace OpenMS
   {
     // the following attributes will be stored as meta values (userParam):
     //  - CompoundName (name of the compound)
+    //  - Adducts (adduct associated to the compound)
     // the following attributes will be stored as CV values (CV):
     // - label type
     // the following attributes will be stored as attributes:
@@ -1138,6 +1148,7 @@ namespace OpenMS
     compound.molecular_formula = tr_it->SumFormula;
     compound.smiles_string = tr_it->SMILES;
     compound.setMetaValue("CompoundName", tr_it->CompoundName);
+    if (!tr_it->Adducts.empty()) compound.setMetaValue("Adducts", tr_it->Adducts);
 
     // does this apply to compounds as well?
     if (!tr_it->label_type.empty())
@@ -1201,6 +1212,7 @@ namespace OpenMS
 
       mytransition.PeptideSequence = pep.sequence;
       mytransition.ProteinName = "NA";
+      mytransition.GeneName = "NA";
       mytransition.uniprot_id = "NA";
       if (!pep.protein_refs.empty())
       {
@@ -1233,6 +1245,10 @@ namespace OpenMS
       {
         mytransition.label_type = pep.getMetaValue("LabelType").toString();
       }
+      if (pep.metaValueExists("GeneName"))
+      {
+        mytransition.GeneName = pep.getMetaValue("GeneName").toString();
+      }
     }
     else if (!it->getCompoundRef().empty())
     {
@@ -1261,6 +1277,10 @@ namespace OpenMS
       if (compound.metaValueExists("CompoundName"))
       {
         mytransition.CompoundName = compound.getMetaValue("CompoundName");
+      }
+      if (compound.metaValueExists("Adducts"))
+      {
+        mytransition.Adducts = compound.getMetaValue("Adducts");
       }
     }
     else
@@ -1367,7 +1387,7 @@ namespace OpenMS
     mytransition.identifying_transition = it->isIdentifyingTransition();
     mytransition.quantifying_transition = it->isQuantifyingTransition();
 
-    return(mytransition);
+    return mytransition;
   }
 
   void TransitionTSVFile::writeTSVOutput_(const char* filename, OpenMS::TargetedExperiment& targeted_exp)
@@ -1413,8 +1433,10 @@ namespace OpenMS
         + (String)it.CompoundName             + "\t"
         + (String)it.SumFormula               + "\t"
         + (String)it.SMILES                   + "\t"
+        + (String)it.Adducts                  + "\t"
         + (String)it.ProteinName              + "\t"
         + (String)it.uniprot_id               + "\t"
+        + (String)it.GeneName                 + "\t"
         + (String)it.fragment_type            + "\t"
         + (String)it.fragment_nr              + "\t"
         + (String)it.Annotation               + "\t"
